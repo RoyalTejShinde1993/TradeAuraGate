@@ -1,214 +1,327 @@
-# TradeAuraGate  - Low-Latency C++ Trading Client
+# 🚀 TradeAuraGate
 
-This project is a high-performance C++ port of the Shoonya/Noren API. It is designed for High-Frequency Trading (HFT) with an emphasis on extremely low latency, lock-free concurrency, and zero-copy JSON parsing.
+### Modern C++20 Trading Engine & Offline Options Simulator
 
-We strictly use the `.hpp` and `.cpp` extensions to denote modern C++ headers and source files.
+<p align="center">
+  <img src="https://img.shields.io/badge/C%2B%2B-20-00599C?style=for-the-badge&logo=cplusplus&logoColor=white" alt="C++20" />
+  <img src="https://img.shields.io/badge/CMake-Build_System-064F8C?style=for-the-badge&logo=cmake&logoColor=white" alt="CMake" />
+  <img src="https://img.shields.io/badge/Trading-Engine-00A86B?style=for-the-badge" alt="Trading Engine" />
+  <img src="https://img.shields.io/badge/Offline-Simulation-orange?style=for-the-badge" alt="Offline Simulation" />
+  <img src="https://img.shields.io/badge/Market_Data-Synthetic-yellow?style=for-the-badge" alt="Synthetic Market Data" />
+</p>
+
+**TradeAuraGate** is a C++20 trading-engine project focused on real-time market-data processing, options analytics, risk-aware order-management components, and offline simulation.
+
+The project provides a development environment for exploring trading-system architecture without requiring broker credentials or a live trading account.
+
+> [!IMPORTANT]
+> **Offline mode uses simulated market data.** It does not establish a broker connection, represent live exchange prices, or place real orders.
 
 ---
 
-## Folder Structure
+## 📚 Table of Contents
+
+- [✨ Features](#-features)
+- [🏗️ Architecture](#️-architecture)
+- [🧮 Options Analytics](#-options-analytics)
+- [🛡️ Risk Management](#️-risk-management)
+- [⚙️ Requirements](#️-requirements)
+- [🚀 Build and Run](#-build-and-run)
+- [🧪 Run Tests](#-run-tests)
+- [📂 Project Structure](#-project-structure)
+- [📊 Performance Engineering](#-performance-engineering)
+- [🗺️ Roadmap](#️-roadmap)
+- [🔐 Security](#-security)
+- [⚠️ Disclaimer](#️-disclaimer)
+- [👨‍💻 Author](#-author)
+
+---
+
+## ✨ Features
+
+| Component | Description |
+|---|---|
+| ⚡ C++20 Engine | Modern C++ implementation organized into reusable components |
+| 📡 Market Data | Tick-processing interfaces and WebSocket integration components |
+| 🧪 Offline Simulator | Inject synthetic ticks without connecting to a broker |
+| 📈 Options Analytics | Black–Scholes pricing and Greek calculations |
+| 🎯 Implied Volatility | Implied-volatility calculation utilities |
+| 🔄 Option Chain | Register option instruments and display simulated chain data |
+| 🛡️ Risk Components | Order-management and risk-related modules |
+| 🧰 CMake Build | Reproducible project configuration and compilation |
+| ✅ Automated Tests | CTest-based test execution |
+
+*Feature availability depends on the implementation in the current branch. Performance and numerical accuracy should be established through dedicated tests and benchmarks.*
+
+## 🏗️ Architecture
+
+```mermaid
+flowchart TD
+    A["Market Data Source"] --> B["Tick Processing"]
+    S["Synthetic Tick Generator"] --> B
+    B --> C["Realtime Engine"]
+    C --> D["Option Chain Manager"]
+    D --> E["Options Analytics"]
+    C --> F["Strategy / Decision Layer"]
+    F --> G["Order Management"]
+    G --> H["Risk Checks"]
+    H --> I["Execution Interface"]
+    T["Automated Tests"] -.-> D
+    T -.-> E
+    T -.-> H
+```
+
+### Main processing flow
+
+1. **Market-data input:** Receive ticks from a configured data source or generate synthetic ticks in offline mode.
+2. **Tick processing:** Parse and route incoming market updates.
+3. **Option-chain management:** Maintain the registered option instruments and their available market values.
+4. **Analytics:** Calculate option prices and Greeks using the implemented pricing functions.
+5. **Decision and risk components:** Connect strategy logic to order-management and risk checks as these modules are implemented and tested.
+6. **Validation:** Use automated tests and reproducible simulations to verify behavior.
+
+---
+
+## 🧮 Options Analytics
+
+TradeAuraGate includes Black–Scholes-related functionality in its Greek analytics module.
+
+Potential calculations include:
+
+- **Delta (Δ):** Sensitivity of option value to the underlying price.
+- **Gamma (Γ):** Sensitivity of Delta to the underlying price.
+- **Theta (Θ):** Sensitivity to the passage of time.
+- **Vega (ν):** Sensitivity to volatility.
+- **Rho (ρ):** Sensitivity to the risk-free interest rate.
+- **Implied Volatility (IV):** Volatility estimated from an observed option premium.
+
+### Example output
 
 ```text
-TradeAuraGate /
-├── CMakeLists.txt        # Build system configuration
-├── include/              # Public headers
-│   ├── engine/           # Real-Time Greeks Engine & Options logic
-│   ├── greek/            # Black-Scholes pricing math
-│   ├── oms/              # Order & Risk Management System
-│   └── shoonyacpp/       # Core API Models & Network Clients
-├── src/                  # Implementation files
-│   ├── engine/           
-│   ├── oms/              
-│   ├── api.cpp           # REST API logic
-│   └── websocket.cpp     # WebSocket logic
-├── examples/             # Trading scripts
-│   └── main.cpp          # Live Greeks Engine Runner
-├── tests/                # Unit tests & Latency benchmarks
-└── README.md             # This documentation
+========================================================
+       TradeAuraGate - OFFLINE OPTIONS SIMULATOR
+========================================================
+Mode: SIMULATED DATA ONLY
+Underlying: 25000.00
+
+Strike    Call Premium    Put Premium    Analytics
+--------------------------------------------------------
+24900     Simulated       Simulated      Greeks / IV
+24950     Simulated       Simulated      Greeks / IV
+25000     Simulated       Simulated      Greeks / IV
+25050     Simulated       Simulated      Greeks / IV
+25100     Simulated       Simulated      Greeks / IV
+--------------------------------------------------------
+No live market data or real orders in offline mode.
 ```
+
+*Illustrative format only; values depend on the simulator's current configuration.*
+
+### Numerical validation checklist
+
+- [ ] Verify Black–Scholes prices against known reference cases.
+- [ ] Test call and put Delta, Gamma, Vega, Theta, and Rho.
+- [ ] Validate implied-volatility round trips against known premiums.
+- [ ] Reject invalid inputs and premiums outside valid pricing bounds.
+- [ ] Confirm volatility units and Theta time units are consistent.
 
 ---
 
-## The Algo Trading Architecture 
+## 🛡️ Risk Management
 
-To achieve sub-millisecond latency, you cannot have your networking code block your trading logic. The architecture of this algorithmic trading engine is split into three main components running simultaneously:
+Risk controls are essential in any trading system. The project includes order-management and risk-related components that can be extended and validated for:
 
-### 1. Market Data Ingestion (The WebSocket Thread)
-*   **What it does:** Runs entirely on its own background thread. It stays connected to the Shoonya WebSocket.
-*   **How it's fast:** When a tick arrives, it is parsed instantly using **`simdjson`** (which uses CPU SIMD instructions to parse gigabytes of JSON per second). It extracts the price and symbol without allocating any `std::string` copies in memory.
-*   **Handoff:** Instead of using a slow `std::mutex` to pass the data to your trading logic, it pushes a lightweight `Tick` struct into a **Lock-Free Queue**.
+- Order quantity and notional limits.
+- Position and exposure limits.
+- Invalid order rejection.
+- Duplicate-order protection.
+- Order-state tracking.
+- Failure handling and structured logging.
 
-### 2. The Strategy Engine (The Main Thread)
-*   **What it does:** This is the brain of your algo. It runs in a tight, infinite `while(true)` loop on the main thread.
-*   **How it's fast:** It continuously polls the **Lock-Free Queue** (e.g., `moodycamel::ConcurrentQueue`). The moment a tick is popped from the queue, it updates your indicators (e.g., moving averages) and evaluates your trading strategy (e.g., "Is Price > Moving Average?").
-*   **Handoff:** If the strategy conditions are met, it instantly triggers the Execution Module.
-
-### 3. The Execution Module (The REST Client)
-*   **What it does:** Sends the Buy/Sell order to the Shoonya REST API.
-*   **How it's fast:** Normal HTTP requests (like Python's `requests`) take ~30-50ms because they have to do a TCP handshake and TLS negotiation every single time. Our Execution Module uses **Connection Pooling (HTTP Keep-Alive)** via `cpr` or `Boost.Asio`. The TCP connection to the exchange is kept open permanently, meaning order placement takes only **~1-5ms**.
-
-```mermaid
-graph LR
-    A[Shoonya WebSocket] -->|JSON Ticks| B(WebSocket Thread \n simdjson)
-    B -->|Tick Struct| C{Lock-Free Queue}
-    C -->|Pop Tick| D(Strategy Engine \n Main Thread)
-    D -->|Trade Signal| E(Execution Module \n REST Keep-Alive)
-    E -->|1ms Order| F[Shoonya API]
-```
-
-### Class Architecture: `NorenRestApi`
-Here is a blueprint of how the REST API client encapsulates authentication and networking state:
-
-```mermaid
-classDiagram
-    class NorenRestApi {
-        - std::string host_url_
-        - UserCredentials credentials_
-        - void* http_session_
-        + NorenRestApi(host)
-        + get_oauth_url()
-        + get_access_token()
-        + place_order(Order)
-    }
-    
-    class UserCredentials {
-        + std::string user_id
-        + std::string access_token
-        + is_logged_in()
-    }
-    
-    NorenRestApi "1" *-- "1" UserCredentials : owns >
-    NorenRestApi "1" *-- "1" CPR_Session : hides (void*) >
-```
+**Important:** These are design and validation objectives, not a claim that every control is currently implemented or production-ready. Verify each control in the corresponding source code and tests before using the engine for real execution.
 
 ---
 
-## Real-Time Option Greeks Engine Benchmark
+## ⚙️ Requirements
 
-TradeAuraGate  includes a fully integrated, production-grade Real-Time Option Chain Greeks Engine.
+Install the following tools in your development environment:
 
-### Performance & Features
-- **Ultra-Low Latency:** The engine dynamically subscribes to ATM strikes and computes the full Greek matrix (Price, IV, Delta, Gamma, Theta, Vega) in **~10-15 microseconds** per tick, drastically outperforming Python-based alternatives.
-- **Dynamic Token Resolution (`OptionSymbolManager`):** The engine dynamically downloads the daily `NFO_symbols.txt` master file from Shoonya, parses 80,000+ instruments in-memory, mathematically identifies the nearest NIFTY/BANKNIFTY expiry, and maps the exact numeric Token IDs dynamically. No hardcoded dates or tokens!
-- **Put-Call Parity IV Fallback:** For illiquid or Deep-In-The-Money (ITM) options where Black-Scholes mathematically fails (price < intrinsic value), the engine safely falls back to the Implied Volatility of the opposite Out-Of-The-Money (OTM) strike to calculate flawless, mathematically sound Greeks.
+- A C++20-compatible compiler, such as GCC or Clang.
+- CMake.
+- GNU Make or another supported build tool.
+- Git.
 
----
-
-## Order Management System (OMS) & Risk
-
-The broker includes a built-in Order Management System designed to track execution state and prevent catastrophic trading errors.
-
-### Performance & Benchmarks
-- **Execution Network Latency:** By utilizing **HTTP Keep-Alive (Connection Pooling)**, the OMS reuses active TLS connections to the exchange, dropping order placement latency to **~1-5 milliseconds** (compared to ~30-50ms in Python `requests`).
-- **Internal Routing & Risk Checks:** The `RiskManager` evaluates max drawdown and quantity limits, and pushes the order to the execution thread via Lock-Free queues in **< 1 microsecond**.
-
-###  Execution Timeline (Current `main.cpp` Implementation)
-
-Here is exactly how much time every single step in our active code takes, from the moment you start the binary to the real-time processing of options:
-
-```mermaid
-graph TD
-    subgraph Startup Phase
-        A[Load .env Configuration <br/> ~1 ms] --> B[Verify Access Token <br/> ~30-50 ms]
-        B --> C[Init Option Symbol Manager <br/> ~200-300 ms]
-        C --> D[WebSocket Connect & SSL <br/> ~50-100 ms]
-    end
-
-    subgraph Real-Time Pipeline per Tick
-        E[Socket Read & Parse JSON <br/> ~2 us] --> F[Token Lookup <br/> < 1 us]
-        F --> G[Calculate Full Greeks Matrix <br/> ~15 us]
-    end
-    
-    subgraph Background Thread
-        H[Console Output <br/> Batched every 500ms <br/> ~1-2 ms]
-    end
-    
-    D --> E
-    G -.->|Async Data Available| H
-    
-    style E fill:#0d2c16,stroke:#4caf50,stroke-width:2px
-    style F fill:#0d2c16,stroke:#4caf50,stroke-width:2px
-    style G fill:#0d2c16,stroke:#4caf50,stroke-width:2px
-    style H fill:#1e1e1e,stroke:#888,stroke-dasharray: 5 5
-```
-#### 1. Application Startup Phase (One-Time Setup)
-1. **Load `.env` Configuration**: `~1 ms` (Local file read)
-2. **Login / Verify Access Token (`/UserDetails`)**: `~30-50 ms` (HTTP POST Network Roundtrip)
-3. **Initialize Option Symbol Manager**: `~200-300 ms` (Download & parse option master file in-memory)
-4. **WebSocket Connect & SSL Handshake**: `~50-100 ms` (TCP/TLS Handshake)
-
-#### 2. Real-Time Pipeline (Per Market Tick)
-When a live tick arrives over the WebSocket, this is the exact flow:
-1. **Socket Read & Parse JSON (`simdjson`)**: `~2 us`
-2. **Token Lookup (`get_token`)**: `< 1 us`
-3. **Calculate Full Greeks Matrix (BSM Math)**: `~15 us`
-
-**Total Latency to Process 1 Live Tick**: **~17 Microseconds** 
-
-#### 3. Background Observer (Async)
-1. **Console Output (`print_realtime_chain`)**: `~1-2 ms` *(Runs in a detached background thread every 500ms. I/O is slow, which is why we batch prints on a background thread instead of printing every tick!)*
-
-
-### Components
-1. **Order Manager (`OrderManager.hpp`)**: Maintains an internal, low-latency ledger of all active orders. It dynamically updates `OrderState` (Open, Executed, Rejected, Cancelled, Traded) as WebSocket execution reports arrive, preventing desync between your strategy and the exchange.
-2. **Order Book / Trade Book Sync (`OrderBook.hpp`)**: Provides synchronous endpoints (`get_order_book()`, `get_trade_book()`) to reconcile the local memory state with the remote exchange state, ensuring a highly accurate execution ledger.
-3. **Risk Manager (`RiskManager.hpp`)**: A strict pre-trade risk filter that prevents rogue algorithms. It enforces:
-   - **Max Order Quantity**: Prevents "fat-finger" quantity errors before they reach the network.
-   - **Max Open Orders**: Prevents infinite-loop order spamming.
-   - **Max Drawdown**: Automatically halts trading if global max loss is breached.
-
----
-
-## Implementation Roadmap (Phases)
-
-You can build this project out in the following structured phases:
-
-### Phase 1: Build System Setup (CMake)
-Setup `CMakeLists.txt` to automatically download and link our high-performance dependencies (`simdjson`, `cpr`, `Boost`) using `FetchContent`. This guarantees cross-platform compatibility.
-
-### Phase 2: Core Data Types & Aliases
-Translate the Python API classes into strictly typed, cache-friendly C++ `enum class` and packed `struct`s.
-Files to create in `include/shoonyacpp/`:
-- `aliases.hpp` (for `ProductType`, `FeedType`, `PriceType`, `BuyOrSell` enums)
-- `structs.hpp` (for `Position`, `Order`, `Holdings` structs)
-
-*Example `.hpp` Definition:*
-```cpp
-#pragma once
-#include <cstdint>
-
-enum class ProductType : char {
-    Delivery = 'C',
-    Intraday = 'I',
-    Normal   = 'M',
-    CF       = 'M'
-};
-
-enum class BuyOrSell : char {
-    Buy = 'B',
-    Sell = 'S'
-};
-```
-
-### Phase 3: Fast REST API Client (Authentication & Orders)
-Build the `NorenRestApi` C++ class in `api.hpp` and `api.cpp`. 
-Focus on:
-1.  **Zero-Allocation Payloads:** Constructing JSON requests efficiently.
-2.  **Connection Pooling:** Ensuring the HTTP Session stays alive across multiple `place_order()` calls.
-
-### Phase 4: High-Performance WebSocket Feed
-Build the `NorenWebSocket` C++ class.
-Focus on running the networking context in a dedicated background thread and using zero-copy parsing.
-
-### Phase 5: The Execution Engine (Main Thread)
-Tie the system together in `main.cpp`. Instantiate the Lock-Free Queue, start the WebSocket thread, and run your Strategy Engine while-loop.
-
-## Compiling for Maximum Speed
-
-When compiling for production, ensure you use the following flags to let the compiler use advanced CPU instructions and aggressive inlining:
+On Ubuntu or a GitHub Codespaces Linux environment:
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build -j
-# Compiler flags used under the hood: -O3 -march=native -flto
+sudo apt-get update
+sudo apt-get install -y build-essential cmake git
 ```
+
+Check the installed tools:
+
+```bash
+g++ --version
+cmake --version
+git --version
+```
+
+---
+
+## 🚀 Build and Run
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/RoyalTejShinde1993/TradeAuraGate.git
+cd TradeAuraGate
+```
+
+### 2. Configure the project
+
+```bash
+cmake -S . -B build
+```
+
+### 3. Build
+
+```bash
+cmake --build build --parallel 2
+```
+
+### 4. Run the offline simulation
+
+```bash
+./build/nexus_engine --offline
+```
+
+The offline simulator injects synthetic ticks into the engine and displays the resulting option-chain information. No broker credentials are required for this mode.
+
+---
+
+## 🧪 Run Tests
+
+Run the test suite with:
+
+```bash
+ctest --test-dir build --output-on-failure
+```
+
+To list the available CTest tests:
+
+```bash
+ctest --test-dir build -N
+```
+
+For more detailed test output:
+
+```bash
+ctest --test-dir build --verbose
+```
+
+A successful test run confirms that the configured tests passed; it does not independently establish production readiness, live-market reliability, or numerical accuracy beyond the tested cases.
+
+---
+
+## 📂 Project Structure
+
+```text
+TradeAuraGate/
+├── CMakeLists.txt
+├── README.md
+├── examples/
+│   └── main.cpp
+├── include/
+│   ├── engine/
+│   │   └── RealtimeEngine.hpp
+│   ├── greek/
+│   │   └── Greek.hpp
+│   └── shoonyacpp/
+│       └── api.hpp
+├── src/
+│   └── engine/
+│       └── RealtimeEngine.cpp
+├── tests/
+└── build/
+```
+
+*This is a high-level illustration, not a complete file inventory. Check the repository for the exact current directory structure. The `build/` directory is generated by CMake and generally should not be committed.*
+
+---
+
+## 📊 Performance Engineering
+
+Trading systems often require predictable latency, bounded resource use, and reliable recovery from failures.
+
+Areas to investigate and measure in TradeAuraGate include:
+
+- Tick-processing throughput.
+- Allocation behavior during market-data updates.
+- Lock contention and thread coordination.
+- Option-chain update cost.
+- Greek calculation throughput.
+- Risk-check and order-management overhead.
+- Tail latency under sustained load.
+- CPU and memory usage during long-running simulations.
+
+### Benchmarking principles
+
+1. Define the workload and test environment.
+2. Warm up the program before collecting measurements.
+3. Run multiple iterations and report median and tail latency.
+4. Separate parsing, analytics, risk checks, and execution measurements.
+5. Document compiler flags, hardware, data volume, and methodology.
+
+Avoid publishing microsecond or millisecond performance claims until they have been measured reproducibly.
+
+---
+
+## 🗺️ Roadmap
+
+- [x] CMake-based build configuration
+- [x] Offline simulation entry point
+- [x] Synthetic tick injection
+- [x] Option-chain simulation
+- [x] Initial automated test suite
+- [ ] Expand Black–Scholes and implied-volatility unit tests
+- [ ] Add reproducible performance benchmarks
+- [ ] Add structured logging and error-reporting tests
+- [ ] Extend risk-control and order-state tests
+- [ ] Improve documentation for each public API
+- [ ] Validate live connectivity separately from offline simulation
+
+Roadmap items should be updated as functionality is implemented, tested, and merged.
+
+---
+
+## 🔐 Security
+
+- Never commit broker passwords, API secrets, access tokens, or session credentials.
+- Use environment variables or a suitable secret-management system for sensitive configuration.
+- Keep offline simulation separate from real execution.
+- Validate market-data and order inputs.
+- Test failure scenarios before connecting to any live account.
+- Review risk controls and broker-specific requirements before enabling order placement.
+
+---
+
+## ⚠️ Disclaimer
+
+TradeAuraGate is a software-development and educational project. Offline output is synthetic and is not financial advice or a representation of real market conditions.
+
+Trading and derivatives involve substantial financial risk. Do not use the project for live trading without appropriate testing, independent validation, security review, operational monitoring, and risk controls.
+
+---
+
+## 👨‍💻 Author
+
+**Tejas Shinde**
+
+- GitHub: [@RoyalTejShinde1993](https://github.com/RoyalTejShinde1993)
+- Repository: [TradeAuraGate](https://github.com/RoyalTejShinde1993/TradeAuraGate)
+
+---
+
+<p align="center">
+  <strong>Built with C++20, tested through simulation, and designed for continued engineering improvement.</strong>
+</p>
